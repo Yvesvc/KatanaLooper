@@ -1,0 +1,114 @@
+﻿<Window x:Class="KatanaLooper.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:KatanaLooper"
+        xmlns:conv="clr-namespace:KatanaLooper.Converters"
+        xmlns:VM="clr-namespace:KatanaLooper.ViewModel"
+        xmlns:Settings="clr-namespace:KatanaLooper.Settings"
+        xmlns:i="clr-namespace:System.Windows.Interactivity;assembly=System.Windows.Interactivity"
+        xmlns:System="clr-namespace:System;assembly=mscorlib"
+        mc:Ignorable="d"
+        Title="Katana Looper" Height="600" Width="1000">
+    <Window.DataContext>
+        <VM:MainViewModel />
+    </Window.DataContext>
+    <Window.Resources>
+        <conv:CanvasTopConverter x:Key="CanvasTopConverter"/>
+        <conv:BitmapToBitmapImageConverter x:Key="BitmapToBitmapImageConverter"/>
+    </Window.Resources>
+    <Window.InputBindings>
+        <KeyBinding Key="R" Command="{Binding RecordWavCommand}" />
+        <KeyBinding Key="Space" Command="{Binding PlayWavCommand}" />
+        <KeyBinding Key="O" Modifiers="Ctrl" Command="{Binding LoadWavCommand}" />
+        <KeyBinding Key="S" Modifiers="Ctrl" Command="{Binding SaveWavCommand}" />
+    </Window.InputBindings>
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="50"></ColumnDefinition>
+            <ColumnDefinition Width="50"></ColumnDefinition>
+            <ColumnDefinition Width="50"></ColumnDefinition>
+            <ColumnDefinition Width="50"></ColumnDefinition>
+            <ColumnDefinition Width="50"></ColumnDefinition>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="25"></RowDefinition>
+            <RowDefinition Height="Auto"></RowDefinition>
+        </Grid.RowDefinitions>
+        <TextBox Name="BPMTextBox" Grid.Column="0" Grid.Row="0" HorizontalAlignment="Center" VerticalAlignment="Center" BorderThickness="0" PreviewMouseLeftButtonDown="BPMTextBox_PreviewMouseLeftButtonDown" PreviewTextInput="BPMTextBox_TextInput" TextChanged="BPMTextBox_TextChanged"/>
+        <Button Grid.Column="1" Grid.Row="0" Background="White" BorderThickness="0" Opacity="{Binding RecordWavCommandOpacity}">
+            <Image Source="{Binding RecordWavCommandImage}"/>
+            <i:Interaction.Triggers>
+                <i:EventTrigger EventName="Click">
+                    <i:InvokeCommandAction Command="{Binding RecordWavCommand}"/>
+                </i:EventTrigger>
+            </i:Interaction.Triggers>
+        </Button>
+        <Button Grid.Column="2" Grid.Row="0" Background="White" Opacity="{Binding PlayWavCommandOpacity}">
+            <Image Source="{Binding PlayWavCommandImage}"/>
+            <i:Interaction.Triggers>
+                <i:EventTrigger EventName="Click">
+                    <i:InvokeCommandAction Command="{Binding PlayWavCommand}"/>
+                </i:EventTrigger>
+            </i:Interaction.Triggers>
+        </Button>
+        <Button Grid.Column="3" Grid.Row="0" Background="White" Opacity="{Binding SaveWavCommandOpacity}">
+            <Image Source="{Binding SaveWavCommandImage}"/>
+            <i:Interaction.Triggers>
+                <i:EventTrigger EventName="Click">
+                    <i:InvokeCommandAction Command="{Binding SaveWavCommand}"/>
+                </i:EventTrigger>
+            </i:Interaction.Triggers>
+        </Button>
+        <Button Grid.Column="4" Grid.Row="0" Background="White" Opacity="{Binding LoadWavCommandOpacity}">
+            <Image Source="{Binding LoadWavCommandImage}"/>
+            <i:Interaction.Triggers>
+                <i:EventTrigger EventName="Click">
+                    <i:InvokeCommandAction Command="{Binding LoadWavCommand}"/>
+                </i:EventTrigger>
+            </i:Interaction.Triggers>
+        </Button>
+        <Canvas x:Name="WavCanvas" Grid.Column="0" Grid.ColumnSpan="4" Grid.Row="1"  Height="{Binding WaveformHeight}" Width="{Binding WaveformWidth}" Margin="0,5,0,0">
+
+            <Image Name="ProcessedWaveformEnd"  Canvas.Left="0" Height="{Binding WaveformHeight}" Width="{Binding WaveformWidth}" Stretch="UniformToFill" 
+             Source="{Binding GreyedOutWaveform, Converter={StaticResource BitmapToBitmapImageConverter}}" />
+            <!--Source="{Binding TransparantWaveformFilePath}"-->
+            <Image Name="UnprocessedWaveform"  Canvas.Left="0" Height="{Binding WaveformHeight}" Width="{Binding WaveformWidth}" Stretch="UniformToFill"
+            Source="{Binding Waveform, Converter={StaticResource BitmapToBitmapImageConverter}}"/>
+            <Image Name="ProcessedWaveformStart"  Canvas.Left="0" Height="{Binding WaveformHeight}" Width="0" Stretch="UniformToFill"
+            Source="{Binding GreyedOutWaveform, Converter={StaticResource BitmapToBitmapImageConverter}}" />
+            <Rectangle x:Name="ThumbSlider" Height="5" Width="{Binding WaveformWidth}">
+                <Canvas.Top>
+                    <MultiBinding Converter="{StaticResource CanvasTopConverter}">
+                        <Binding Path="Height" ElementName="WavCanvas"/>
+                        <Binding Path="Height" ElementName="ThumbSlider"/>
+                    </MultiBinding>
+                </Canvas.Top>
+            </Rectangle>
+            <Rectangle x:Name="ProgressBar" Height="{Binding WaveformHeight}" Width="5" Fill="Green"/>
+            <Thumb x:Name="LeftThumb" Height="10" Width="5" Canvas.Left="0" DragDelta="LeftThumb_DragDelta" DragCompleted="DragCompleted">
+                <Canvas.Top>
+                    <MultiBinding Converter="{StaticResource CanvasTopConverter}">
+                        <Binding Path="Height" ElementName="WavCanvas"/>
+                        <Binding Path="Height" ElementName="LeftThumb"/>
+                    </MultiBinding>
+                </Canvas.Top>
+            </Thumb>
+            <Rectangle x:Name="LeftThumbLine" Height="{Binding WaveformHeight}" Width="1" Fill="Black"/>
+
+            <Thumb x:Name="RightThumb" Height="10" Width="5" Canvas.Left="{Binding WaveformWidth}" DragDelta="RightThumb_DragDelta" DragCompleted="DragCompleted">
+                <Canvas.Top>
+                    <MultiBinding Converter="{StaticResource CanvasTopConverter}">
+                        <Binding Path="Height" ElementName="WavCanvas"/>
+                        <Binding Path="Height" ElementName="RightThumb"/>
+                    </MultiBinding>
+                </Canvas.Top>
+            </Thumb>
+            <Rectangle x:Name="RightThumbLine" Height="{Binding WaveformHeight}" Width="1" Fill="Black">
+            </Rectangle>
+
+        </Canvas>
+
+    </Grid>
+</Window>

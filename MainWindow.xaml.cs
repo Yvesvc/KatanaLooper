@@ -15,7 +15,7 @@ namespace KatanaLooper
     {
         public volatile bool _playing;
         public volatile bool _streamEnded;
-        private double _lengthSongInSec;
+        private double _lengthRecordingInSec;
 
         public MainWindow()
         {
@@ -23,39 +23,44 @@ namespace KatanaLooper
             BPMTextBox.Text = "BPM";
             Canvas.SetLeft(LeftThumbLine, LeftThumb.Width / 2);
             Canvas.SetLeft(RightThumbLine, Canvas.GetLeft(RightThumb) + (RightThumb.Width / 2));
-            CreateCodeBehindAndViewModelBindings();
+            CreateBindingsBetweenCodeBehindAndViewModel();
         }
 
-        private void CreateCodeBehindAndViewModelBindings()
+        private void CreateBindingsBetweenCodeBehindAndViewModel()
         {
             INotifyPropertyChanged viewModel = (INotifyPropertyChanged)this.DataContext;
             viewModel.PropertyChanged += (sender, args) =>
             {
-                if (args.PropertyName.Equals("Recording") && (sender as IWaveformViewModel).Recording)
+                if (args.PropertyName.Equals("Recording") && (sender as IWavformViewModel).Recording)
                 {
                     ResetThumbs();
                 }
-                if (args.PropertyName.Equals("Playing") && (sender as IWaveformViewModel).Playing)
+                if (args.PropertyName.Equals("Playing"))
                 {
-                    RunProgressBar();
+                    if((sender as IWavformViewModel).Playing)
+                    {
+                        _playing = true;
+                        RunProgressBar();
+                    }
 
+                    else
+                    {
+                        _playing = false;
+                    }
+                    
                 }
-                if (args.PropertyName.Equals("Playing") && !(sender as IWaveformViewModel).Playing)
-                {
-                    _playing = false;
-                }
-                if (args.PropertyName.Equals("StreamEnded") && (sender as IWaveformViewModel).StreamEnded)
+                if (args.PropertyName.Equals("StreamEnded") && (sender as IWavformViewModel).StreamEnded)
                 {
                     _streamEnded = true;
                 }
-                if (args.PropertyName.Equals("LengthSongInSec"))
+                if (args.PropertyName.Equals("LengthRecordingInSec"))
                 {
-                    _lengthSongInSec = (sender as IWaveformViewModel).LengthSongInSec;
+                    _lengthRecordingInSec = (sender as IWavformViewModel).LengthRecordingInSec;
 
                     ShowBeatsOnWavCanvas(BPMTextBox.Text);
                 }
 
-                (sender as IWaveformViewModel).WavLoaded += WavLoaded;
+                (sender as IWavformViewModel).WavLoaded += WavLoaded;
             };
         }
 
@@ -66,29 +71,27 @@ namespace KatanaLooper
 
         private void RunProgressBar()
         {
-            _playing = true;
             Canvas.SetLeft(ProgressBar, Canvas.GetLeft(LeftThumb));
-            double dist = Canvas.GetLeft(RightThumb) - Canvas.GetLeft(LeftThumb);
-            double distpersec = dist / _lengthSongInSec;
-            UIElementCollection coll = WavCanvas.Children;
-            FrameworkElement bar = null;
-            foreach (FrameworkElement el in coll)
+            double pixelsPerSec = Canvas.GetLeft(RightThumb) - Canvas.GetLeft(LeftThumb) / _lengthRecordingInSec;
+
+            FrameworkElement progressBar = null;
+            foreach (FrameworkElement el in WavCanvas.Children)
             {
-                if ((el as FrameworkElement).Name == "ProgressBar")
+                if ((el as FrameworkElement).Name == nameof(ProgressBar))
                 {
-                    bar = el;
+                    progressBar = el;
                 }
             }
             Task.Factory.StartNew(() =>
             {
-                ShowProgressBar(distpersec, bar);
+                ShowProgressBar(progressBar, pixelsPerSec);
             }); ;
         }
 
-        private void ShowProgressBar(double distpersec, FrameworkElement bar)
+        private void ShowProgressBar(FrameworkElement bar, double pixelsPerSec)
         {
             int delay = 10;
-            double dist = (distpersec * delay) / 1000;
+            double pixels = (pixelsPerSec * delay) / 1000;
             while (_playing)
             {
                 if (_streamEnded)
@@ -105,8 +108,7 @@ namespace KatanaLooper
                     Thread.Sleep(delay);
                     Dispatcher.Invoke(() =>
                     {
-                        double current = (double)bar.GetValue(Canvas.LeftProperty);
-                        bar.SetValue(Canvas.LeftProperty, current + dist);
+                        bar.SetValue(Canvas.LeftProperty, (double)bar.GetValue(Canvas.LeftProperty) + pixels);
                     });
                 }
 
@@ -117,10 +119,10 @@ namespace KatanaLooper
         {
             Canvas.SetLeft(LeftThumb, 0);
             Canvas.SetLeft(LeftThumbLine, (LeftThumb.Width / 2));
-            Canvas.SetLeft(RightThumb, 800);//not hardcoding
-            Canvas.SetLeft(RightThumbLine, 800 + (LeftThumb.Width / 2));
-            ProcessedWaveformStart.Width = 0;
-            UnprocessedWaveform.Width = 800;
+            Canvas.SetLeft(RightThumb, WavCanvas.Width);//not hardcoding
+            Canvas.SetLeft(RightThumbLine, WavCanvas.Width + (LeftThumb.Width / 2));
+            TrimmedWavformStart.Width = 0;
+            UntrimmedWavform.Width = WavCanvas.Width;
         }
 
         private void LeftThumb_DragDelta(object sender, System.Windows.Controls.Primitives.DragDeltaEventArgs e)
@@ -137,7 +139,7 @@ namespace KatanaLooper
 
             Canvas.SetLeft(LeftThumb, Canvas.GetLeft(LeftThumb) + e.HorizontalChange);
             Canvas.SetLeft(LeftThumbLine, Canvas.GetLeft(LeftThumb) + (LeftThumb.Width / 2));
-            ProcessedWaveformStart.Width = Canvas.GetLeft(LeftThumb);
+            TrimmedWavformStart.Width = Canvas.GetLeft(LeftThumb);
         }
 
         private void RightThumb_DragDelta(object sender, System.Windows.Controls.Primitives.DragDeltaEventArgs e)
@@ -154,19 +156,16 @@ namespace KatanaLooper
 
             Canvas.SetLeft(RightThumb, Canvas.GetLeft(RightThumb) + e.HorizontalChange);
             Canvas.SetLeft(RightThumbLine, Canvas.GetLeft(RightThumb) + (RightThumb.Width / 2));
-            UnprocessedWaveform.Width = Canvas.GetLeft(RightThumb);
+            UntrimmedWavform.Width = Canvas.GetLeft(RightThumb);
         }
 
         private void DragCompleted(object sender, System.Windows.Controls.Primitives.DragCompletedEventArgs e)
         {
-            IWaveformViewModel viewModel = DataContext as IWaveformViewModel;
-            double waveformStart = Canvas.GetLeft(LeftThumb) / WavCanvas.Width;
-            double waveformEnd = Canvas.GetLeft(RightThumb) / WavCanvas.Width;
-            viewModel.UpdateStartAndEndOfWavCommand.Execute(new Tuple<double, double>(waveformStart, waveformEnd));
+            IWavformViewModel viewModel = DataContext as IWavformViewModel;
+            double wavformStart = Canvas.GetLeft(LeftThumb) / WavCanvas.Width;
+            double wavformEnd = Canvas.GetLeft(RightThumb) / WavCanvas.Width;
+            viewModel.UpdateStartAndEndOfWavCommand.Execute(new Tuple<double, double>(wavformStart, wavformEnd));
         }
-
-
-
 
         private void BPMTextBox_PreviewMouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
@@ -179,12 +178,17 @@ namespace KatanaLooper
 
         private void BPMTextBox_TextInput(object sender, System.Windows.Input.TextCompositionEventArgs e)
         {
-            e.Handled = !new Regex("^[0-9]+$").IsMatch(e.Text);
+            e.Handled = !IsNumeric(e.Text); new Regex("^[0-9]+$").IsMatch(e.Text);
         }
 
-        private void ShowBeatsOnWavCanvas(string beatsPerMinute)
+        private bool IsNumeric(string text)
         {
-            if (!new Regex("^[0-9]+$").IsMatch(beatsPerMinute))
+            return new Regex("^[0-9]+$").IsMatch(text);
+        }
+
+        private void ShowBeatsOnWavCanvas(string beatsPerMinute)//Based on the beat, it's easier to know where to trim the end of the wave form (only works if you play in rhythm ;) )
+        {
+            if (!IsNumeric(beatsPerMinute))
             {
                 return;
             }
@@ -195,24 +199,23 @@ namespace KatanaLooper
 
         private void AddBeats(int bpm)
         {
-            double start = Canvas.GetLeft(LeftThumb);
-            double end = Canvas.GetLeft(RightThumb);
-
-            int numberOfBeatsToAdd = (int)(((double)bpm * _lengthSongInSec) / 60);
-            double intervalInSec = 60.0 / (double)bpm;
+            int numberOfBeatsToAdd = (int)(((double)bpm * _lengthRecordingInSec) / 60);
+            double secPerBeat = 60.0 / (double)bpm;
             double numberOfPixels = Canvas.GetLeft(RightThumb) - Canvas.GetLeft(LeftThumb);
-            double intervalInPixels = (intervalInSec * numberOfPixels) / _lengthSongInSec;
-            double currentPixel = start;
+            double pixelsPerBeat = (secPerBeat * numberOfPixels) / _lengthRecordingInSec;
+            double currentPixel = Canvas.GetLeft(LeftThumb);
             for (int i = 0; i < numberOfBeatsToAdd; i++)
             {
-                System.Windows.Shapes.Rectangle ellipse = new System.Windows.Shapes.Rectangle();
-                ellipse.Height = 10;
-                ellipse.Width = 3;
-                ellipse.Fill = new SolidColorBrush() { Color = System.Windows.Media.Color.FromArgb(255, 255, 255, 0) };
-                ellipse.Name = "Beat" + i;
-                WavCanvas.Children.Add(ellipse);
-                Canvas.SetLeft(ellipse, currentPixel);
-                currentPixel += intervalInPixels;
+                System.Windows.Shapes.Rectangle beat = new System.Windows.Shapes.Rectangle
+                {
+                    Height = 10,
+                    Width = 3,
+                    Fill = new SolidColorBrush() { Color = System.Windows.Media.Color.FromArgb(255, 255, 255, 0) },
+                    Name = "Beat" + i
+                };
+                WavCanvas.Children.Add(beat);
+                Canvas.SetLeft(beat, currentPixel);
+                currentPixel += pixelsPerBeat;
             }
         }
 

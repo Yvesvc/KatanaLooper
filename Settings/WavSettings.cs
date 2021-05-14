@@ -12,8 +12,5 @@ namespace KatanaLooper.Settings
         public string UntrimmedRecordingFilePath { get => RecordingDir + "UntrimmedRecording.wav"; }
         public string TrimmedRecordingFilePath { get => RecordingDir + "TrimmedRecording.wav"; }
 
-        public WavSettings ()
-        {
-        }
     }
 }

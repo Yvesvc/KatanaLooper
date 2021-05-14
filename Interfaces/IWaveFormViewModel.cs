@@ -8,25 +8,23 @@ using System.Windows.Input;
 
 namespace KatanaLooper
 {
-    interface IWaveformViewModel
+    interface IWavformViewModel //interface between View (MainWindow) and ViewModel (MainViewModel)
     {
         bool Recording { get; set; }
         bool Playing { get; set; }
         bool StreamEnded { get; set; }
         string RecordWavCommandText { get; set; }
         string RecordWavCommandImage { get; set; }
+        int WavformWidth { get; set; }
+        int WavformHeight { get; set; }
+        Bitmap Wavform { get; set; }
+        Bitmap GreyedOutWavform { get; set; }
+        double LengthRecordingInSec { get; set; }
 
         ICommand RecordWavCommand { get; set; }
-        ICommand RenderWaveformCommand { get; set; }
         ICommand UpdateStartAndEndOfWavCommand { get; set; }
         ICommand PlayWavCommand { get; set; }
         ICommand SaveWavCommand { get; set; }
-
-        int WaveformWidth { get; set; }
-        int WaveformHeight { get; set; }
-        Bitmap Waveform { get; set; }
-        Bitmap GreyedOutWaveform { get; set; }
-        double LengthSongInSec { get; set; }
 
         event Action WavLoaded;
     }

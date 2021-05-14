@@ -4,32 +4,30 @@ using System.Threading;
 
 namespace KatanaLooper.Classes
 {
-    internal class WavTrimmer
+    static internal class WavTrimmer
     {
         internal static void Trim(string untrimmedRecordingFilePath, string trimmedRecordingFilePath, double startOfTrimmedWav, double endOfTrimmedWav)
         {
-            WaveFileReader reader = new WaveFileReader(untrimmedRecordingFilePath);
-            WaveFormat waveFormat = WaveFormat.CreateIeeeFloatWaveFormat(44100, 1);
-            WaveFileWriter writer = new WaveFileWriter(trimmedRecordingFilePath, waveFormat);
-            int startInBytes = (int)(reader.Length * startOfTrimmedWav);
-            int bytesPerSample = reader.WaveFormat.BitsPerSample / 8;
-            int startByte = bytesPerSample * (int)((double)startInBytes / (double)bytesPerSample);
-            int endInBytes = (int)(reader.Length * endOfTrimmedWav);
-            int endByte = bytesPerSample * (int)((double)endInBytes / (double)bytesPerSample);
+            WaveFileReader wavFileReader = new WaveFileReader(untrimmedRecordingFilePath);
+            WaveFileWriter wavFileWriter = new WaveFileWriter(trimmedRecordingFilePath, WaveFormat.CreateIeeeFloatWaveFormat(wavFileReader.WaveFormat.SampleRate, wavFileReader.WaveFormat.Channels));
+            int startByte = (int)(wavFileReader.Length * startOfTrimmedWav);
+            int bytesPerSample = wavFileReader.WaveFormat.BitsPerSample / 8;
+            int startByteOfSample = bytesPerSample * (int)((double)startByte / (double)bytesPerSample);
+            int endByte = (int)(wavFileReader.Length * endOfTrimmedWav);
+            int endByteOfSample = bytesPerSample * (int)((double)endByte / (double)bytesPerSample);
 
-            byte[] bytes = new byte[bytesPerSample];
-            for (int i = 0; i < reader.Length; i += bytesPerSample)
+            byte[] sample = new byte[bytesPerSample];
+            for (int i = 0; i < wavFileReader.Length; i += bytesPerSample)
             {
-                reader.Read(bytes, 0, bytesPerSample);
-                if (i >= startByte && i < endByte)
+                wavFileReader.Read(sample, 0, bytesPerSample);
+                if (i >= startByteOfSample && i < endByteOfSample)
                 {
-
-                    writer.Write(bytes, 0, bytesPerSample);
+                    wavFileWriter.Write(sample, 0, bytesPerSample);
                 }
             }
 
-            reader.Dispose();
-            writer.Dispose();
+            wavFileReader.Dispose();
+            wavFileWriter.Dispose();
         }
     }
 }

@@ -12,16 +12,16 @@ namespace KatanaLooper.Converters
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            if(value == null)
+            if (value == null)
             {
                 return null;
             }
-            var memory = new MemoryStream();
-            (value as Bitmap).Save(memory, ImageFormat.Png);
+            var memorySteam = new MemoryStream();
+            (value as Bitmap).Save(memorySteam, ImageFormat.Png);
 
             BitmapImage bitmapImage = new BitmapImage();
             bitmapImage.BeginInit();
-            bitmapImage.StreamSource = memory;
+            bitmapImage.StreamSource = memorySteam;
             bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
             bitmapImage.EndInit();
             bitmapImage.Freeze();

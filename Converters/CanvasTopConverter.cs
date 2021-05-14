@@ -9,9 +9,9 @@ namespace KatanaLooper.Converters
 
         public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
         {
-            double? heightcontrol = values[0] as double?;
-            double? heightChildControl = values[1] as double?;
-            return (heightcontrol - heightChildControl) / 2;
+            double? heightOfCanvas = values[0] as double?;
+            double? heightOfChild = values[1] as double?;
+            return (heightOfCanvas - heightOfChild) / 2;
         }
 
 

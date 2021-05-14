@@ -1,9 +1,5 @@
 ﻿using NAudio.Wave;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace KatanaLooper.Classes
 {
@@ -19,21 +15,13 @@ namespace KatanaLooper.Classes
 
         public event Action StreamEnded;
 
-        public override WaveFormat WaveFormat
-        {
-            get { return sourceStream.WaveFormat; }
-        }
+        public override WaveFormat WaveFormat => sourceStream.WaveFormat;
 
-
-        public override long Length
-        {
-            get { return sourceStream.Length; }
-        }
-
+        public override long Length => sourceStream.Length;
 
         public override long Position
         {
-            get { return sourceStream.Position; }
+            get => sourceStream.Position;
             set { sourceStream.Position = value; }
         }
 

@@ -107,8 +107,8 @@
     <Compile Include="Settings\GeneralSettings.cs" />
     <Compile Include="Converters\CanvasTopConverter.cs" />
     <Compile Include="Classes\Recorder.cs" />
-    <Compile Include="Classes\WaveFormRenderer.cs" />
-    <Compile Include="Settings\WaveformSettings.cs" />
+    <Compile Include="Classes\WavformRenderer.cs" />
+    <Compile Include="Settings\WavformSettings.cs" />
     <Compile Include="Settings\WavSettings.cs" />
     <Compile Include="Settings\WavTrimSettings.cs" />
     <Compile Include="ViewModel\MainViewModel.cs" />

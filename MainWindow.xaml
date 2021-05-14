@@ -36,6 +36,8 @@
             <RowDefinition Height="25"></RowDefinition>
             <RowDefinition Height="Auto"></RowDefinition>
         </Grid.RowDefinitions>
+        
+        <!--Buttons-->
         <TextBox Name="BPMTextBox" Grid.Column="0" Grid.Row="0" HorizontalAlignment="Center" VerticalAlignment="Center" BorderThickness="0" PreviewMouseLeftButtonDown="BPMTextBox_PreviewMouseLeftButtonDown" PreviewTextInput="BPMTextBox_TextInput" TextChanged="BPMTextBox_TextChanged"/>
         <Button Grid.Column="1" Grid.Row="0" Background="White" BorderThickness="0" Opacity="{Binding RecordWavCommandOpacity}">
             <Image Source="{Binding RecordWavCommandImage}"/>
@@ -69,16 +71,18 @@
                 </i:EventTrigger>
             </i:Interaction.Triggers>
         </Button>
-        <Canvas x:Name="WavCanvas" Grid.Column="0" Grid.ColumnSpan="4" Grid.Row="1"  Height="{Binding WaveformHeight}" Width="{Binding WaveformWidth}" Margin="0,5,0,0">
-
-            <Image Name="ProcessedWaveformEnd"  Canvas.Left="0" Height="{Binding WaveformHeight}" Width="{Binding WaveformWidth}" Stretch="UniformToFill" 
-             Source="{Binding GreyedOutWaveform, Converter={StaticResource BitmapToBitmapImageConverter}}" />
-            <!--Source="{Binding TransparantWaveformFilePath}"-->
-            <Image Name="UnprocessedWaveform"  Canvas.Left="0" Height="{Binding WaveformHeight}" Width="{Binding WaveformWidth}" Stretch="UniformToFill"
-            Source="{Binding Waveform, Converter={StaticResource BitmapToBitmapImageConverter}}"/>
-            <Image Name="ProcessedWaveformStart"  Canvas.Left="0" Height="{Binding WaveformHeight}" Width="0" Stretch="UniformToFill"
-            Source="{Binding GreyedOutWaveform, Converter={StaticResource BitmapToBitmapImageConverter}}" />
-            <Rectangle x:Name="ThumbSlider" Height="5" Width="{Binding WaveformWidth}">
+        
+        <!--WaveForm-->
+        <Canvas x:Name="WavCanvas" Grid.Column="0" Grid.ColumnSpan="4" Grid.Row="1"  Height="{Binding WavformHeight}" Width="{Binding WavformWidth}" Margin="0,5,0,0">
+            <!--To show the start and end of the trimmed wav file, the greyed out wave form image overlaps the original wave form image at the left and right of the start and end of the wave file-->
+            <!--The start and end of the trimmed wav file can be changed by dragging the thumbs-->
+            <Image Name="ProcessedWavformEnd"  Canvas.Left="0" Height="{Binding WavformHeight}" Width="{Binding WavformWidth}" Stretch="UniformToFill" 
+             Source="{Binding GreyedOutWavform, Converter={StaticResource BitmapToBitmapImageConverter}}" />
+            <Image Name="UntrimmedWavform"  Canvas.Left="0" Height="{Binding WavformHeight}" Width="{Binding WavformWidth}" Stretch="UniformToFill"
+            Source="{Binding Wavform, Converter={StaticResource BitmapToBitmapImageConverter}}"/>
+            <Image Name="TrimmedWavformStart"  Canvas.Left="0" Height="{Binding WavformHeight}" Width="0" Stretch="UniformToFill"
+            Source="{Binding GreyedOutWavform, Converter={StaticResource BitmapToBitmapImageConverter}}" />
+            <Rectangle x:Name="ThumbSlider" Height="5" Width="{Binding WavformWidth}">
                 <Canvas.Top>
                     <MultiBinding Converter="{StaticResource CanvasTopConverter}">
                         <Binding Path="Height" ElementName="WavCanvas"/>
@@ -86,7 +90,7 @@
                     </MultiBinding>
                 </Canvas.Top>
             </Rectangle>
-            <Rectangle x:Name="ProgressBar" Height="{Binding WaveformHeight}" Width="5" Fill="Green"/>
+            <Rectangle x:Name="ProgressBar" Height="{Binding WavformHeight}" Width="5" Fill="Green"/>
             <Thumb x:Name="LeftThumb" Height="10" Width="5" Canvas.Left="0" DragDelta="LeftThumb_DragDelta" DragCompleted="DragCompleted">
                 <Canvas.Top>
                     <MultiBinding Converter="{StaticResource CanvasTopConverter}">
@@ -95,9 +99,9 @@
                     </MultiBinding>
                 </Canvas.Top>
             </Thumb>
-            <Rectangle x:Name="LeftThumbLine" Height="{Binding WaveformHeight}" Width="1" Fill="Black"/>
+            <Rectangle x:Name="LeftThumbLine" Height="{Binding WavformHeight}" Width="1" Fill="Black"/>
 
-            <Thumb x:Name="RightThumb" Height="10" Width="5" Canvas.Left="{Binding WaveformWidth}" DragDelta="RightThumb_DragDelta" DragCompleted="DragCompleted">
+            <Thumb x:Name="RightThumb" Height="10" Width="5" Canvas.Left="{Binding WavformWidth}" DragDelta="RightThumb_DragDelta" DragCompleted="DragCompleted">
                 <Canvas.Top>
                     <MultiBinding Converter="{StaticResource CanvasTopConverter}">
                         <Binding Path="Height" ElementName="WavCanvas"/>
@@ -105,9 +109,8 @@
                     </MultiBinding>
                 </Canvas.Top>
             </Thumb>
-            <Rectangle x:Name="RightThumbLine" Height="{Binding WaveformHeight}" Width="1" Fill="Black">
+            <Rectangle x:Name="RightThumbLine" Height="{Binding WavformHeight}" Width="1" Fill="Black">
             </Rectangle>
-
         </Canvas>
 
     </Grid>

@@ -2,36 +2,23 @@ using GalaSoft.MvvmLight;
 using GalaSoft.MvvmLight.Command;
 using NAudio.Wave;
 using System;
-using System.Diagnostics;
 using System.Linq;
 using System.Windows.Input;
 using System.IO;
-using System.Xml.Serialization.Configuration;
 using KatanaLooper.Classes;
-using System.Windows.Markup;
-using System.Windows.Media;
 using System.Drawing;
-using System.Runtime.InteropServices;
-using System.Windows.Media.Imaging;
-using System.Collections.Generic;
 using KatanaLooper.Settings;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.Win32;
 
 namespace KatanaLooper.ViewModel
 {
 
-    public class MainViewModel : ViewModelBase, IWaveformViewModel
+    public class MainViewModel : ViewModelBase, IWavformViewModel
     {
-        private readonly WaveformSettings wavSettings = new WaveformSettings(800, 200);
-
-        private string _recordWavCommandText;
-        public string RecordWavCommandText
-        {
-            get => _recordWavCommandText;
-            set { _recordWavCommandText = value; RaisePropertyChanged(); }
-        }
+        private readonly WavformSettings wavSettings = new WavformSettings(800, 200);
+        Recorder recorder;
+        WaveFileReader wavFileReader;
+        WaveOut player;
 
         private bool _recording;
         public bool Recording
@@ -77,6 +64,13 @@ namespace KatanaLooper.ViewModel
             }
         }
 
+        private string _recordWavCommandText;
+        public string RecordWavCommandText
+        {
+            get => _recordWavCommandText;
+            set { _recordWavCommandText = value; RaisePropertyChanged(); }
+        }
+
         private string _recordWavCommandImage;
         public string RecordWavCommandImage
         {
@@ -99,15 +93,8 @@ namespace KatanaLooper.ViewModel
             }
         }
 
-        public string SaveWavCommandImage
-        {
-            get => GeneralSettings.IconsDirectory + "Save" + ".PNG";
-        }
-
-        public string LoadWavCommandImage
-        {
-            get => GeneralSettings.IconsDirectory + "Open" + ".PNG";
-        }
+        public string SaveWavCommandImage => GeneralSettings.IconsDirectory + "Save" + ".PNG";
+        public string LoadWavCommandImage => GeneralSettings.IconsDirectory + "Open" + ".PNG";
 
         public double RecordWavCommandOpacity => _canRecord ? 1.0 : 0.25; 
         public double PlayWavCommandOpacity => _canPlayWav ? 1.0 : 0.25; 
@@ -115,68 +102,62 @@ namespace KatanaLooper.ViewModel
         public double LoadWavCommandOpacity => _canLoadWav ? 1.0 : 0.25; 
 
         public ICommand RecordWavCommand { get; set; }
-        public ICommand RenderWaveformCommand { get; set; }
         public ICommand UpdateStartAndEndOfWavCommand { get; set; }
         public ICommand PlayWavCommand { get; set; }
         public ICommand SaveWavCommand { get; set; }
         public ICommand LoadWavCommand { get; set; }
-
-        Recorder recorder;
-
-        WaveFileReader wfreader;
-        WaveOut player;
-
-        private int _waveformWidth;
-        public int WaveformWidth
+        
+        private int _wavformWidth;
+        public int WavformWidth
         {
-            get => _waveformWidth;
+            get => _wavformWidth;
             set
             {
-                _waveformWidth = value;
+                _wavformWidth = value;
                 RaisePropertyChanged();
             }
         }
 
-        private int _waveformHeight;
-        public int WaveformHeight
+        private int _wavformHeight;
+        public int WavformHeight
         {
-            get => _waveformHeight;
+            get => _wavformHeight;
             set
             {
-                _waveformHeight = value;
+                _wavformHeight = value;
                 RaisePropertyChanged();
             }
         }
 
-        private Bitmap _waveform;
-        public Bitmap Waveform
+        private Bitmap _wavform;
+        public Bitmap Wavform
         {
-            get => _waveform;
+            get => _wavform;
             set
             {
-                _waveform = value;
+                _wavform = value;
                 RaisePropertyChanged();
             }
         }
 
-        private Bitmap _greyedOutWaveform;
-        public Bitmap GreyedOutWaveform
+        private Bitmap _greyedOutWavform;
+        public Bitmap GreyedOutWavform
         {
-            get => _greyedOutWaveform;
+            get => _greyedOutWavform;
             set
             {
-                _greyedOutWaveform = value;
+                _greyedOutWavform = value;
                 RaisePropertyChanged();
             }
         }
 
-        private double _lengthSongInSec;
-        public double LengthSongInSec
+        private double _lengthRecordingInSec;
+        public double LengthRecordingInSec
         {
-            get => _lengthSongInSec;
+            get => _lengthRecordingInSec;
             set
             {
-                _lengthSongInSec = value;
+                _lengthRecordingInSec = value;
                 RaisePropertyChanged();
             }
         }
@@ -192,14 +173,12 @@ namespace KatanaLooper.ViewModel
             Recording = false;
             Playing = false;
             RecordWavCommand = new RelayCommand(Record, _canRecord);
-            RenderWaveformCommand = new RelayCommand(RenderWaveform);
             UpdateStartAndEndOfWavCommand = new RelayCommand<Tuple<double, double>>(UpdateStartAndEndOfTrimmedWav);
             PlayWavCommand = new RelayCommand(PlayWav, _canPlayWav);
             SaveWavCommand = new RelayCommand(SaveWav, _canSaveWav);
             LoadWavCommand = new RelayCommand(LoadWav, _canLoadWav);
-            //wavSettings = new WaveformSettings(800, 200);
-            WaveformWidth = wavSettings.WaveformWidth;
-            WaveformHeight = wavSettings.WaveformHeight;
+            WavformWidth = wavSettings.WavformWidth;
+            WavformHeight = wavSettings.WavformHeight;
         }
 
         private bool _canPlayWav => !Recording;
@@ -208,12 +187,10 @@ namespace KatanaLooper.ViewModel
         {
             if (!Playing)
             {
-                //Playing = true;
                 StartPlaying();
             }
             else
             {
-                Playing = false;
                 StopPlaying();
             }
         }
@@ -226,39 +203,41 @@ namespace KatanaLooper.ViewModel
                 WavTrimmer.Trim(wavSettings.UntrimmedRecordingFilePath, wavSettings.TrimmedRecordingFilePath, _startOfTrimmedWav, _endOfTrimmedWav);
             }
 
-            wfreader = new WaveFileReader(wavSettings.TrimmedRecordingFilePath);
-            LoopStream loop = new LoopStream(wfreader);
-            loop.StreamEnded += Loop_StreamEnded;
-            LengthSongInSec = (double)wfreader.Length / (double)wfreader.WaveFormat.AverageBytesPerSecond;
+            wavFileReader = new WaveFileReader(wavSettings.TrimmedRecordingFilePath);
+            LoopStream loopstream = new LoopStream(wavFileReader);
+            loopstream.StreamEnded += LoopStreamEnded;
+            LengthRecordingInSec = (double)wavFileReader.Length / (double)wavFileReader.WaveFormat.AverageBytesPerSecond;
             player = new WaveOut();
             player.DesiredLatency = 50;
-            player.Init(loop);
+            player.Init(loopstream);
             Playing = true;
             player.Play();
         }
 
-        private void Loop_StreamEnded()
+        private void LoopStreamEnded()
         {
             StreamEnded = true;
         }
 
         private void StopPlaying()
         {
+            Playing = false;
             player.Stop();
             player.Dispose();
-            wfreader.Dispose();
+            wavFileReader.Dispose();
         }
 
         private bool _canSaveWav => !Recording && !Playing && File.Exists(wavSettings.TrimmedRecordingFilePath);
 
-
         private void SaveWav()
         {
-            SaveFileDialog saveFileDialog = new SaveFileDialog();
-            saveFileDialog.Filter = "wav | *.wav*";
-            saveFileDialog.FileName = "test";
-            saveFileDialog.DefaultExt = "wav";
-            saveFileDialog.AddExtension = true;
+            SaveFileDialog saveFileDialog = new SaveFileDialog
+            {
+                Filter = "wav | *.wav*",
+                FileName = "test",
+                DefaultExt = "wav",
+                AddExtension = true
+            };
             if (saveFileDialog.ShowDialog() == true)
             {
                 File.Copy(wavSettings.TrimmedRecordingFilePath, saveFileDialog.FileName);
@@ -269,13 +248,15 @@ namespace KatanaLooper.ViewModel
 
         private void LoadWav()
         {
-            OpenFileDialog openFileDialog = new OpenFileDialog();
-            openFileDialog.Filter = "wav | *.wav*";
+            OpenFileDialog openFileDialog = new OpenFileDialog
+            {
+                Filter = "wav | *.wav*"
+            };
             if (openFileDialog.ShowDialog() == true)
             {
                 File.Copy(openFileDialog.FileName, wavSettings.UntrimmedRecordingFilePath, true);
                 File.Copy(openFileDialog.FileName, wavSettings.TrimmedRecordingFilePath, true);
-                RenderWaveform();
+                RenderWavform();
                 WavLoaded.Invoke();
             }
         }
@@ -297,7 +278,6 @@ namespace KatanaLooper.ViewModel
             }
             else
             {
-                Recording = false;
                 StopRecording();
             }
         }
@@ -325,23 +305,24 @@ namespace KatanaLooper.ViewModel
 
         private void StopRecording()
         {
+            Recording = false;
             recorder.StopRecording();
             recorder.Dispose();
-            RenderWaveform();
+            RenderWavform();
         }
 
 
-        private void RenderWaveform()
+        private void RenderWavform()
         {
-            Bitmap waveform = WaveformRenderer.Render(wavSettings);
-            Bitmap greyedOutWaveform = WaveformRenderer.IncreaseBrightness(waveform);
+            Bitmap wavform = WavformRenderer.Render(wavSettings);
+            Bitmap greyedOutWavform = WavformRenderer.IncreaseBrightness(wavform);
 
-            Waveform = waveform;
-            GreyedOutWaveform = greyedOutWaveform;
+            Wavform = wavform;
+            GreyedOutWavform = greyedOutWavform;
 
-            WaveFileReader reader = new WaveFileReader(wavSettings.TrimmedRecordingFilePath);
-            LengthSongInSec = (double)reader.Length / (double)reader.WaveFormat.AverageBytesPerSecond;
-            reader.Dispose();
+            WaveFileReader wavFileReader = new WaveFileReader(wavSettings.TrimmedRecordingFilePath);
+            LengthRecordingInSec = (double)wavFileReader.Length / (double)wavFileReader.WaveFormat.AverageBytesPerSecond;
+            wavFileReader.Dispose();
             RaisePropertyChanged(nameof(SaveWavCommandOpacity));
         }
 

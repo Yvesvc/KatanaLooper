@@ -15,7 +15,6 @@ namespace KatanaLooper.Classes
     public static class WavformRenderer
     {
         static readonly int peakWidth = 2;
-        private delegate int ToInt(byte[] value, int startIndex);
 
         public static Bitmap Render(WavformSettings wavSettings)
         {

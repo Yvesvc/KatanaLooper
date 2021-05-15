@@ -82,13 +82,13 @@ namespace KatanaLooper
                     progressBar = el;
                 }
             }
-            Task.Factory.StartNew(() =>
+            Task.Factory.StartNew(() => //Start on new thread otherwise Thread.Sleep(delay) in ShowProgressBar() would continuously block the current (UI) thread
             {
                 ShowProgressBar(progressBar, pixelsPerSec);
             }); ;
         }
 
-        private void ShowProgressBar(FrameworkElement bar, double pixelsPerSec)
+        private void ShowProgressBar(FrameworkElement progressBar, double pixelsPerSec)
         {
             int delay = 10;
             double pixels = (pixelsPerSec * delay) / 1000;
@@ -98,7 +98,7 @@ namespace KatanaLooper
                 {
                     Dispatcher.Invoke(() =>
                     {
-                        bar.SetValue(Canvas.LeftProperty, Canvas.GetLeft(LeftThumb));
+                        progressBar.SetValue(Canvas.LeftProperty, Canvas.GetLeft(LeftThumb));
                     });
                     _streamEnded = false;
                 }
@@ -108,7 +108,7 @@ namespace KatanaLooper
                     Thread.Sleep(delay);
                     Dispatcher.Invoke(() =>
                     {
-                        bar.SetValue(Canvas.LeftProperty, (double)bar.GetValue(Canvas.LeftProperty) + pixels);
+                        progressBar.SetValue(Canvas.LeftProperty, (double)progressBar.GetValue(Canvas.LeftProperty) + pixels);
                     });
                 }
 
@@ -119,7 +119,7 @@ namespace KatanaLooper
         {
             Canvas.SetLeft(LeftThumb, 0);
             Canvas.SetLeft(LeftThumbLine, (LeftThumb.Width / 2));
-            Canvas.SetLeft(RightThumb, WavCanvas.Width);//not hardcoding
+            Canvas.SetLeft(RightThumb, WavCanvas.Width);
             Canvas.SetLeft(RightThumbLine, WavCanvas.Width + (LeftThumb.Width / 2));
             TrimmedWavformStart.Width = 0;
             UntrimmedWavform.Width = WavCanvas.Width;

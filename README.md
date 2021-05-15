@@ -15,3 +15,5 @@ Here's how it works:
 - Now you can start playing back the loop by pressing the start button and release your inner Jimi Hendrix!
 
 After playing, you can always save your recording and reload it later.
+
+Stack/techniques used: C#, WPF, NAudio, Audio processing
